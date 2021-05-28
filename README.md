@@ -13,4 +13,4 @@ A bot that uses the scavenge calculator to send optimal scavenges. It's coded to
 1. Clone the repo and `cd` into it
 2. `yarn install`
 3. Edit `scavenge.ts` and add your tribal wars credentials
-4. `ts-node scaveging.ts`
+4. `ts-node scavenging.ts`
