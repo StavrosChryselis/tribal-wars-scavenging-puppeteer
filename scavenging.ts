@@ -10,9 +10,9 @@ const delay = ms => new Promise(resolve => setTimeout(resolve, ms))
 const sarrwsiUrl = 'https://gr71.fyletikesmaxes.gr/game.php?village=2487&screen=place&mode=scavenge'
 
 type ArmyNumbers = {
-  spears:number,
-  swords:number,
-  axes:number,
+  spear:number,
+  sword:number,
+  axe:number,
   light:number,
   heavy:number
 }
@@ -124,9 +124,9 @@ async function sendScavenge(index:number) {
 
   const page = cache.page
 
-  await page.type('.candidate-squad-widget > tbody > tr > td:nth-child(1) > .unitsInput',scavengeArmy[index-1].spears.toString())
-  await page.type('.candidate-squad-widget > tbody > tr > td:nth-child(2) > .unitsInput',scavengeArmy[index-1].swords.toString())
-  await page.type('.candidate-squad-widget > tbody > tr > td:nth-child(3) > .unitsInput',scavengeArmy[index-1].axes.toString())
+  await page.type('.candidate-squad-widget > tbody > tr > td:nth-child(1) > .unitsInput',scavengeArmy[index-1].spear.toString())
+  await page.type('.candidate-squad-widget > tbody > tr > td:nth-child(2) > .unitsInput',scavengeArmy[index-1].sword.toString())
+  await page.type('.candidate-squad-widget > tbody > tr > td:nth-child(3) > .unitsInput',scavengeArmy[index-1].axe.toString())
   await page.type('.candidate-squad-widget > tbody > tr > td:nth-child(4) > .unitsInput',scavengeArmy[index-1].light.toString())
   await page.type('.candidate-squad-widget > tbody > tr > td:nth-child(5) > .unitsInput',scavengeArmy[index-1].heavy.toString())
 
@@ -165,11 +165,13 @@ async function populateArmyNumbers(armyAll:ArmyNumbers) {
     const heavy = await calc_page.evaluate(`document.getElementsByTagName('table')[0].rows[7].cells[${index+1}].textContent`).then(Number.parseInt)
 
     console.log(`Calculated results for scavenge level ${index}`)
-    return {spears:spears,swords:swords,axes:axes,light:light,heavy:heavy}
+    const rval:ArmyNumbers = {spear:spears,sword:swords,axe:axes,light:light,heavy:heavy}
+    console.log(rval)
+    return rval
   }
 
   scavengeArmy = await Promise.all([1,2,3,4].map(calculateArmies))
-
+  console.log(scavengeArmy)
   await calc_page.close()
 }
 
@@ -193,13 +195,17 @@ async function optimal_scaveging() {
   console.log(armyNumbers)
 
   if(scavengeArmy === undefined)
-    await populateArmyNumbers({spears:armyNumbers[0],swords:armyNumbers[1],axes:armyNumbers[2],light:armyNumbers[3],heavy:armyNumbers[4]})
+    await populateArmyNumbers({spear:armyNumbers[0],sword:armyNumbers[1],axe:armyNumbers[2],light:armyNumbers[3],heavy:armyNumbers[4]})
 
-  results.forEach(async (val,index) => {
-    if(val)
-      await sendScavenge(index)
-  })
-
+  if(results[0])
+    await sendScavenge(1)
+  if(results[1])
+    await sendScavenge(2)
+  if(results[2])
+    await sendScavenge(3)
+  if(results[3])
+    await sendScavenge(4)
+  
   await delay(1000)
   await waitForShortest()
 }
