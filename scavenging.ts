@@ -211,6 +211,11 @@ async function optimal_scaveging() {
 }
 
 async function run() {
+  if(process.argv.length > 2) {
+    const toWait = toMs(process.argv[2])
+    console.log(`waiting for ${toWait} ms`)
+    await delay(toWait + 2000)
+  }
   while(true)
     await optimal_scaveging()
 }
