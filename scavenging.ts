@@ -217,8 +217,14 @@ async function run() {
     console.log(`waiting for ${toWait} ms`)
     await delay(toWait + 2000)
   }
-  while(true)
-    await optimal_scaveging()
+  while(true) {
+    try {
+      await optimal_scaveging()
+    } catch (err) {
+      console.log('Crashed, retrying')
+      await optimal_scaveging()
+    }
+  }
 }
 
 run()
