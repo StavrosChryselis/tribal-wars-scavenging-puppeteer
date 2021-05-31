@@ -28,7 +28,7 @@ async function catchRetry(str: string, page: puppeteer.Page): Promise<any> {
     console.log(err)
     console.log('err-string',str)
     await delay(1000)
-    await catchRetry(str, page)
+    return await catchRetry(str, page)
   }
 }
 
@@ -43,7 +43,13 @@ async function logout() {
 
 async function login() {
     if(cache === undefined) {
-      const browser = await puppeteer.launch({headless:true})
+      const browser = await puppeteer.launch({
+        headless:true,
+        args: [
+          "--no-sandbox",
+          "--disable-gpu",
+        ]
+      })
   
       const page = await browser.newPage()
       const navigationPromise = page.waitForNavigation()
@@ -171,7 +177,6 @@ async function populateArmyNumbers(armyAll:ArmyNumbers) {
   }
 
   scavengeArmy = await Promise.all([1,2,3,4].map(calculateArmies))
-  console.log(scavengeArmy)
   await calc_page.close()
 }
 
@@ -197,14 +202,10 @@ async function optimal_scaveging() {
   if(scavengeArmy === undefined)
     await populateArmyNumbers({spear:armyNumbers[0],sword:armyNumbers[1],axe:armyNumbers[2],light:armyNumbers[3],heavy:armyNumbers[4]})
 
-  if(results[0])
-    await sendScavenge(1)
-  if(results[1])
-    await sendScavenge(2)
-  if(results[2])
-    await sendScavenge(3)
-  if(results[3])
-    await sendScavenge(4)
+  results[0] && await sendScavenge(1)
+  results[1] && await sendScavenge(2)
+  results[2] && await sendScavenge(3)
+  results[3] && await sendScavenge(4)
   
   await delay(1000)
   await waitForShortest()
