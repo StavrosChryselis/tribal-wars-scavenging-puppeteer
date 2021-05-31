@@ -142,7 +142,7 @@ async function sendScavenge(index:number) {
   console.log('completed')
 }
 
-async function populateArmyNumbers(armyAll:ArmyNumbers) {
+async function populateArmyNumbers(armyAll:ArmyNumbers,results:boolean[]) {
   if(cache === undefined)
     throw 'Cache not set'
 
@@ -151,10 +151,10 @@ async function populateArmyNumbers(armyAll:ArmyNumbers) {
 
   await catchRetry(`document.getElementById('world').selectedIndex=0`,calc_page)
 
-  await catchRetry(`document.getElementById('eff').click()`,calc_page)
-  await catchRetry(`document.getElementById('ebb').click()`,calc_page)
-  await catchRetry(`document.getElementById('ess').click()`,calc_page)
-  await catchRetry(`document.getElementById('err').click()`,calc_page)
+  results[0] && await catchRetry(`document.getElementById('eff').click()`,calc_page)
+  results[1] && await catchRetry(`document.getElementById('ebb').click()`,calc_page)
+  results[2] && await catchRetry(`document.getElementById('ess').click()`,calc_page)
+  results[3] && await catchRetry(`document.getElementById('err').click()`,calc_page)
 
   Object.keys(armyAll).forEach(async name => {
     if(armyAll[name] > 0)
@@ -200,7 +200,7 @@ async function optimal_scaveging() {
   console.log(armyNumbers)
 
   if(scavengeArmy === undefined)
-    await populateArmyNumbers({spear:armyNumbers[0],sword:armyNumbers[1],axe:armyNumbers[2],light:armyNumbers[3],heavy:armyNumbers[4]})
+    await populateArmyNumbers({spear:armyNumbers[0],sword:armyNumbers[1],axe:armyNumbers[2],light:armyNumbers[3],heavy:armyNumbers[4]},results)
 
   results[0] && await sendScavenge(1)
   results[1] && await sendScavenge(2)
