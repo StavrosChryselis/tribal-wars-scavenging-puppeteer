@@ -219,11 +219,6 @@ async function optimal_scaveging() {
 }
 
 async function run() {
-  if(process.argv.length > 2) {
-    const toWait = toMs(process.argv[2])
-    console.log(`waiting for ${toWait} ms`)
-    await delay(toWait + 2000)
-  }
   while(true) {
     try {
       await optimal_scaveging()
@@ -355,38 +350,15 @@ async function scavenging(args:DefaultScriptArgs) {
     console.log(`waiting for ${toWait} ms`)
     await delay(toWait + 2000)
   }
-  while(true) {
-    try {
-      await optimal_scaveging()
-    } catch (err) {
-      console.log('Crashed, retrying')
-      await optimal_scaveging()
-    }
-  }
+  run()
 }
 
 async function custom_scavenging(args:CustomScriptArgs) {
-  username = args.username
-  password = args.password  
   customNumbers = [{spear:args.spears, sword: args.swords, axe: args.axes, light: args.light, heavy: args.heavy}, [args.first,args.second,args.third,args.fourth]]
-  if(args.wait) {
-    const toWait = toMs(args.wait)
-    console.log(`waiting for ${toWait} ms`)
-    await delay(toWait + 2000)
-  }
-  while(true) {
-    try {
-      await optimal_scaveging()
-    } catch (err) {
-      console.log('Crashed, retrying')
-      await optimal_scaveging()
-    }
-  }
+  scavenging(args)
 }
 
 const argv = yargs.default(process.argv.slice(2))
   .command('$0', 'scavenging bot', yargs_default_builder, scavenging)
   .command('custom', 'scavenging bot with custom army numbers', yargs_custom_builder, custom_scavenging)
   .argv
-
-// run()
