@@ -1,7 +1,8 @@
 import puppeteer from 'puppeteer'
+import * as yargs from 'yargs'
 
-const username = ''
-const password = ''
+let username = ''
+let password = ''
 
 let cache:{ browser: puppeteer.Browser, page: puppeteer.Page } | undefined = undefined
 
@@ -18,6 +19,7 @@ type ArmyNumbers = {
 }
 
 let scavengeArmy:ArmyNumbers[] | undefined = undefined
+let customNumbers: [ArmyNumbers,boolean[]] | undefined = undefined
 
 async function catchRetry(str: string, page: puppeteer.Page): Promise<any> {
   try {
@@ -199,8 +201,13 @@ async function optimal_scaveging() {
   console.log(results)
   console.log(armyNumbers)
 
-  if(scavengeArmy === undefined)
-    await populateArmyNumbers({spear:armyNumbers[0],sword:armyNumbers[1],axe:armyNumbers[2],light:armyNumbers[3],heavy:armyNumbers[4]},results)
+  if(scavengeArmy === undefined) {
+    if(customNumbers === undefined)
+      await populateArmyNumbers({spear:armyNumbers[0],sword:armyNumbers[1],axe:armyNumbers[2],light:armyNumbers[3],heavy:armyNumbers[4]},results)
+    else {
+      await populateArmyNumbers({spear:customNumbers[0].spear, sword:customNumbers[0].sword, axe: customNumbers[0].axe, light: customNumbers[0].light, heavy: customNumbers[0].heavy},customNumbers[1])
+    }
+  }
 
   results[0] && await sendScavenge(1)
   results[1] && await sendScavenge(2)
@@ -227,4 +234,159 @@ async function run() {
   }
 }
 
-run()
+type DefaultScriptArgs = {
+  username: string
+  password: string
+  wait?:string
+}
+
+let yargs_default_builder = (yargs: yargs.Argv):yargs.Argv<DefaultScriptArgs> => yargs
+  .option('username', {
+    alias: 'u',
+    description: 'tribal wars username',
+    type: 'string',
+  })
+  .demandOption('username')
+  .option('password', {
+    alias: 'p',
+    description: 'tribal wars password',
+    type: 'string',
+  })
+  .demandOption('password')
+  .option('wait', {
+    alias: 'w',
+    description: 'initial waiting time',
+    type: 'string'
+  })
+
+type CustomScriptArgs = {
+  username: string
+  password: string
+  wait?:string
+  first: boolean
+  second: boolean
+  third: boolean
+  fourth: boolean
+  spears: number
+  swords: number
+  axes: number
+  light: number
+  heavy: number
+}
+
+let yargs_custom_builder = (yargs: yargs.Argv):yargs.Argv<CustomScriptArgs> => yargs
+  .option('username', {
+    alias: 'u',
+    description: 'tribal wars username',
+    type: 'string',
+  })
+  .demandOption('username')
+  .option('password', {
+    alias: 'p',
+    description: 'tribal wars password',
+    type: 'string',
+  })
+  .demandOption('password')
+  .option('wait', {
+    alias: 'w',
+    description: 'initial waiting time',
+    type: 'string'
+  })
+  .option('first', {
+    alias: '1',
+    description: 'use first scavenge',
+    type: 'boolean',
+    default: false
+  })
+  .option('second', {
+    alias: '2',
+    description: 'use second scavenge',
+    type: 'boolean',
+    default: false
+  })
+  .option('third', {
+    alias: '3',
+    description: 'use third scavenge',
+    type: 'boolean',
+    default: false
+  })
+  .option('fourth', {
+    alias: '4',
+    description: 'use fourth scavenge',
+    type: 'boolean',
+    default: false
+  })
+  .option('spears', {
+    alias: 'sp',
+    description: 'total number of spears',
+    type: 'number',
+    default: 0
+  })
+  .option('swords', {
+    alias: 'sw',
+    description: 'total number of swords',
+    type: 'number',
+    default: 0
+  })
+  .option('axes', {
+    alias: 'ax',
+    description: 'total number of axes',
+    type: 'number',
+    default: 0
+  })
+  .option('light', {
+    alias: 'li',
+    description: 'total number of light cavalry',
+    type: 'number',
+    default: 0
+  })
+  .option('heavy', {
+    alias: 'he',
+    description: 'total number of heavy cavalry',
+    type: 'number',
+    default: 0
+  })
+
+async function scavenging(args:DefaultScriptArgs) {
+  username = args.username
+  password = args.password  
+  if(args.wait) {
+    const toWait = toMs(args.wait)
+    console.log(`waiting for ${toWait} ms`)
+    await delay(toWait + 2000)
+  }
+  while(true) {
+    try {
+      await optimal_scaveging()
+    } catch (err) {
+      console.log('Crashed, retrying')
+      await optimal_scaveging()
+    }
+  }
+}
+
+async function custom_scavenging(args:CustomScriptArgs) {
+  username = args.username
+  password = args.password  
+  customNumbers = [{spear:args.spears, sword: args.swords, axe: args.axes, light: args.light, heavy: args.heavy}, [args.first,args.second,args.third,args.fourth]]
+  if(args.wait) {
+    const toWait = toMs(args.wait)
+    console.log(`waiting for ${toWait} ms`)
+    await delay(toWait + 2000)
+  }
+  while(true) {
+    try {
+      await optimal_scaveging()
+    } catch (err) {
+      console.log('Crashed, retrying')
+      await optimal_scaveging()
+    }
+  }
+}
+
+const argv = yargs.default(process.argv.slice(2))
+  .command('$0', 'scavenging bot', yargs_default_builder, scavenging)
+  .command('custom', 'scavenging bot with custom army numbers', yargs_custom_builder, custom_scavenging)
+  .argv
+
+// run()
