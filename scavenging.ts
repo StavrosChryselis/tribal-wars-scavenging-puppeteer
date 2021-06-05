@@ -57,7 +57,6 @@ async function login() {
       const navigationPromise = page.waitForNavigation()
   
       await page.goto('https://www.fyletikesmaxes.gr/')
-      await navigationPromise
       await page.setViewport({ width: 1920, height: 950 })
   
       await page.waitForSelector('.right #user')
@@ -70,8 +69,6 @@ async function login() {
       await page.type('.right #password', `${password}`)
   
       await page.evaluate(`document.getElementsByClassName('btn-login')[0].click()`)
-  
-      await navigationPromise
   
       await page.waitForSelector('.right > .wrap > .worlds-container > .world-select > .world_button_active')
       await page.click('.right > .wrap > .worlds-container > .world-select > .world_button_active')
