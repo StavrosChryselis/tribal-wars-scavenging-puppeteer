@@ -1,5 +1,22 @@
 import puppeteer from 'puppeteer'
 import * as yargs from 'yargs'
+import {Mutex} from 'Mutex'
+
+const mutex = new Mutex( 'should_happen_one_at_a_time' );
+
+function waitLock() {
+  console.log('waiting for lock')
+  mutex.waitLock()
+  console.log('got lock')
+}
+
+function unlock() {
+  if(!mutex.isLocked()) {
+    throw `Mutex wasn't locked`
+  }
+  mutex.unlock()
+  console.log('released lock')
+}
 
 let username = ''
 let password = ''
@@ -8,7 +25,11 @@ let cache:{ browser: puppeteer.Browser, page: puppeteer.Page } | undefined = und
 
 const delay = ms => new Promise(resolve => setTimeout(resolve, ms))
 
-const sarrwsiUrl = 'https://gr71.fyletikesmaxes.gr/game.php?village=2487&screen=place&mode=scavenge'
+let sarrwsiUrl = ''
+
+function createSarrwsiUrl(id:number) {
+  sarrwsiUrl = `https://gr71.fyletikesmaxes.gr/game.php?village=${id}&screen=place&mode=scavenge`
+}
 
 type ArmyNumbers = {
   spear:number,
@@ -112,13 +133,16 @@ async function waitForShortest() {
 
   if(results.find(res => res === true) !== undefined && armyNumbers.reduce((prev,curr,index) => prev+(curr*((index < 3) ? 1 : (index === 3) ? 4 : 6)),0) > 10) {
       console.log('Found available scavenge while waiting for shortest')
+      unlock()
       await optimal_scaveging()
       return
   }
   let tickers:string[] = await page.evaluate(`Array.from(document.getElementsByClassName('return-countdown')).map(el => el.textContent)`)
   const tickersMs = tickers.map(toMs).sort((a,b) => a-b)
   console.log(`waiting for ${tickersMs[0]} ms`)
+  unlock()
   await delay(tickersMs[0] + 2000)
+  waitLock()
 }
 
 async function sendScavenge(index:number) {
@@ -180,6 +204,7 @@ async function populateArmyNumbers(armyAll:ArmyNumbers,results:boolean[]) {
 }
 
 async function optimal_scaveging() {
+  waitLock()
   await login()
   const page = cache.page
   await page.goto(sarrwsiUrl)
@@ -264,6 +289,7 @@ type CustomScriptArgs = {
   axes: number
   light: number
   heavy: number
+  village: number
 }
 
 let yargs_custom_builder = (yargs: yargs.Argv):yargs.Argv<CustomScriptArgs> => yargs
@@ -338,6 +364,12 @@ let yargs_custom_builder = (yargs: yargs.Argv):yargs.Argv<CustomScriptArgs> => y
     type: 'number',
     default: 0
   })
+  .option('village', {
+    alias: 'v',
+    description: 'id of the village',
+    type: 'number',
+  })
+  .demandOption('village')
 
 async function scavenging(args:DefaultScriptArgs) {
   username = args.username
@@ -352,6 +384,7 @@ async function scavenging(args:DefaultScriptArgs) {
 
 async function custom_scavenging(args:CustomScriptArgs) {
   customNumbers = [{spear:args.spears, sword: args.swords, axe: args.axes, light: args.light, heavy: args.heavy}, [args.first,args.second,args.third,args.fourth]]
+  createSarrwsiUrl(args.village)
   scavenging(args)
 }
 
