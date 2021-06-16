@@ -1,20 +1,19 @@
 import puppeteer from 'puppeteer'
 import * as yargs from 'yargs'
-import {Mutex} from 'Mutex'
+import { Mutex } from 'redis-semaphore'
+import Redis from 'ioredis'
 
-const mutex = new Mutex( 'should_happen_one_at_a_time' );
+const redisClient = new Redis()
+const mutex = new Mutex(redisClient, 'lockingResource',{acquireTimeout:Infinity})
 
-function waitLock() {
+async function waitLock() {
   console.log('waiting for lock')
-  mutex.waitLock()
+  await mutex.acquire()
   console.log('got lock')
 }
 
-function unlock() {
-  if(!mutex.isLocked()) {
-    throw `Mutex wasn't locked`
-  }
-  mutex.unlock()
+async function unlock() {
+  await mutex.release()
   console.log('released lock')
 }
 
@@ -133,16 +132,15 @@ async function waitForShortest() {
 
   if(results.find(res => res === true) !== undefined && armyNumbers.reduce((prev,curr,index) => prev+(curr*((index < 3) ? 1 : (index === 3) ? 4 : 6)),0) > 10) {
       console.log('Found available scavenge while waiting for shortest')
-      unlock()
+      await unlock()
       await optimal_scaveging()
       return
   }
   let tickers:string[] = await page.evaluate(`Array.from(document.getElementsByClassName('return-countdown')).map(el => el.textContent)`)
   const tickersMs = tickers.map(toMs).sort((a,b) => a-b)
   console.log(`waiting for ${tickersMs[0]} ms`)
-  unlock()
+  await unlock()
   await delay(tickersMs[0] + 2000)
-  waitLock()
 }
 
 async function sendScavenge(index:number) {
@@ -204,7 +202,7 @@ async function populateArmyNumbers(armyAll:ArmyNumbers,results:boolean[]) {
 }
 
 async function optimal_scaveging() {
-  waitLock()
+  await waitLock()
   await login()
   const page = cache.page
   await page.goto(sarrwsiUrl)
@@ -379,7 +377,7 @@ async function scavenging(args:DefaultScriptArgs) {
     console.log(`waiting for ${toWait} ms`)
     await delay(toWait + 2000)
   }
-  run()
+  await run()
 }
 
 async function custom_scavenging(args:CustomScriptArgs) {
