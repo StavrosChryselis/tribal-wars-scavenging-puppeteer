@@ -243,6 +243,8 @@ async function run() {
     try {
       await optimal_scaveging()
     } catch (err) {
+      if(mutex.isAcquired)
+        await mutex.release()
       console.log('Crashed, retrying')
       await optimal_scaveging()
     }
